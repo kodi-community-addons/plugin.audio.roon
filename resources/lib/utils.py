@@ -18,9 +18,10 @@ from traceback import format_exc
 
 
 ADDON_ID = "plugin.audio.roon"
+PLUGIN_BASE = "plugin://%s/" % ADDON_ID
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split(".")[0])
 KODILANGUAGE = xbmc.getLanguage(xbmc.ISO_639_1)
-DEBUG = True
+DEBUG = False
 
 
 def log_msg(msg, loglevel=xbmc.LOGNOTICE):

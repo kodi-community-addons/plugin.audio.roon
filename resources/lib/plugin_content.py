@@ -12,13 +12,12 @@ import xbmc
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
-from utils import log_msg, KODI_VERSION, log_exception, ADDON_ID, addon_setting
+from utils import log_msg, KODI_VERSION, log_exception, ADDON_ID, addon_setting, PLUGIN_BASE
 import urlparse
 import urllib
 import sys
 from roonserver import RoonServer
 
-PLUGIN_BASE = "plugin://%s/" % ADDON_ID
 ADDON_HANDLE = int(sys.argv[1])
 
 
@@ -94,8 +93,8 @@ class PluginContent:
         listitem.setProperty("isPlayable", "false")
         xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE,
                                     url=url, listitem=listitem, isFolder=False)
-        # add OSDListItem
-        label = "OSD"
+        # add OSD ListItem
+        label = "Fullscreen OSD"
         url = "%s?action=osd" %PLUGIN_BASE
         listitem = xbmcgui.ListItem(label)
         listitem.setProperty("isPlayable", "false")
@@ -310,6 +309,8 @@ class PluginContent:
         contextmenu = []
         contextmenu.append(("Zone: %s" % self.zone_name,
                             "RunPlugin(%s?action=select_zone)" %PLUGIN_BASE))
+        contextmenu.append(("Fullscreen OSD",
+                            "RunPlugin(%s?action=osd)" %PLUGIN_BASE))
         listitem.addContextMenuItems(contextmenu, True)
         listitem.setProperty("isPlayable", "false")
         xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE,

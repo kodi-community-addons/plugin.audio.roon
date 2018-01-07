@@ -11,7 +11,7 @@ import threading
 import thread
 import xbmc
 import xbmcgui
-from utils import log_msg, log_exception
+from utils import log_msg, log_exception, PLUGIN_BASE, addon_setting
 from metadatautils import MetadataUtils
 from roonserver import RoonServer
 
@@ -42,20 +42,25 @@ class RoonOSD(xbmcgui.WindowXMLDialog):
     def onAction(self, action):
         '''triggers on kodi navigation events'''
         action_id = action.getId()
-        log_msg("onAction: %s" % action_id)
-        if action_id in (9, 10, 92, 216, 247, 257, 275, 61467, 61448, 13):
+        #log_msg("onAction: %s" % action_id)
+        if action_id in (9, 10, 92, 216, 247, 257, 275, 61467, 61448):
             self.close_dialog()
         elif action_id in (12, 68, 79, 229):
             self.toggle_playback()
-        elif action_id in (184, 14, 97):
+        elif action_id in (184, 14, 97, 3):
             self.roon.next_track()
-        elif action_id in (185, 15, 98):
+        elif action_id in (185, 15, 98, 4):
             self.roon.previous_track()
+        elif action_id in (13,):
+            self.roon.stop_playback()
+        elif action_id in (88,):
+            self.roon.volume_up()
+        elif action_id in (89,):
+            self.roon.volume_down()
 
     def close_dialog(self):
         '''stop background thread and close the dialog'''
         self.update_thread.stop_running()
-        #self.roon.pause_playback()
         self.metadatautils.close()
         self.close()
 
@@ -73,6 +78,14 @@ class RoonOSD(xbmcgui.WindowXMLDialog):
             self.roon.shuffle(True)
         elif control_id == 3208:
             self.roon.toggle_repeat()
+        elif control_id == 3209:
+            self.roon.stop_playback()
+        elif control_id == 3210:
+            self.select_zone()
+        elif control_id == 3212:
+            self.roon.volume_down()
+        elif control_id == 3214:
+            self.roon.volume_up()
 
     def toggle_playback(self):
         '''toggle play/pause'''
@@ -84,6 +97,27 @@ class RoonOSD(xbmcgui.WindowXMLDialog):
             self.is_playing = True
             self.getControl(3202).setEnabled(True)
             self.roon.start_playback()
+
+    def select_zone(self):
+        ''' select active zone '''
+        xbmc.executebuiltin("ActivateWindow(busydialog")
+        all_zones = self.roon.send_request("zones")
+        if all_zones:
+            all_zones = all_zones["zones"].values()
+            all_zone_names = [item["display_name"] for item in all_zones]
+        else:
+            all_zone_names = []
+            addon_setting("proxy_host","")
+        dialog = xbmcgui.Dialog()
+        ret = dialog.select("Select zone", all_zone_names)
+        if ret != -1:
+            selected_zone = all_zones[ret]
+            self.roon.zone_id = selected_zone["zone_id"]
+            addon_setting("zone_id", selected_zone["zone_id"])
+            addon_setting("zone_name", selected_zone["display_name"])
+        del dialog
+        xbmc.executebuiltin("Dialog.Close(busydialog)")
+        xbmc.executebuiltin("Container.Refresh")
     
 class RoonOSDUpdateThread(threading.Thread):
     '''Background thread to complement our OSD dialog,
@@ -94,12 +128,12 @@ class RoonOSDUpdateThread(threading.Thread):
     
 
     def __init__(self, *args):
-        log_msg("RoonOSDUpdateThread Init")
         threading.Thread.__init__(self, *args)
 
     def stop_running(self):
         '''stop thread end exit'''
         self.active = False
+        self.join(5)
 
     def set_dialog(self, dialog):
         '''set the active dialog to perform actions'''
@@ -125,16 +159,20 @@ class RoonOSDUpdateThread(threading.Thread):
                 if cur_playback["state"] != self.dialog.is_playing:
                     self.toggle_playstate(cur_playback["state"])
 
+                # zone display_name
+                self.dialog.getControl(3215).setLabel(cur_playback["display_name"])
+
                 trackdetails = cur_playback.get("now_playing")
                 if not trackdetails:
                     self.clear_info()
                 else:
+                    self.set_progress(trackdetails)
                     cur_title = trackdetails["one_line"]["line1"]
                     if cur_title != last_title:
                         last_title = cur_title
+                        self.clear_info()
                         self.update_info(trackdetails)
             monitor.waitForAbort(1)
-
         del monitor
 
 
@@ -154,6 +192,28 @@ class RoonOSDUpdateThread(threading.Thread):
         self.dialog.repeat_state = value
         self.dialog.getControl(3207).setLabel(value)
 
+
+    def set_progress(self, trackdetails):
+        ''' set the progress bar '''
+
+        if not trackdetails.get("seek_position") or not trackdetails.get("length"):
+            self.dialog.getControl(3120).setPercent(0)
+            self.dialog.getControl(3121).setLabel("")
+            return
+
+        duration = trackdetails["length"]
+        cur_pos = trackdetails["seek_position"]
+        progress = 100 * float(cur_pos)/float(duration)
+        self.dialog.getControl(3120).setPercent(progress)
+
+        m, s = divmod(duration, 60)
+        duration_str = "%02d:%02d" % (m, s)
+        m, s = divmod(cur_pos, 60)
+        progress_str = "%02d:%02d" % (m, s)
+        time_str = "%s / %s" %(progress_str, duration_str)
+        self.dialog.getControl(3121).setLabel(time_str)
+
+
     def clear_info(self):
         '''clear osd info labels'''
         self.dialog.getControl(3110).setImage("")
@@ -168,9 +228,8 @@ class RoonOSDUpdateThread(threading.Thread):
         # set rating label
         self.dialog.getControl(3115).setLabel("")
         # clear art
-        self.dialog.getControl(3300).setImage("special://home/addons/plugin.audio.roon/fanart.jpg")
         self.dialog.getControl(3301).setLabel("")
-        self.dialog.getControl(3303).setImage("")
+        self.dialog.getControl(3303).setImage("roonlogo.png")
         self.dialog.getControl(3304).setImage("")
         self.dialog.getControl(3305).setImage("")
         self.dialog.getControl(3306).setImage("")
@@ -202,10 +261,12 @@ class RoonOSDUpdateThread(threading.Thread):
         # get additional artwork and metadata
         artwork = self.dialog.metadatautils.get_music_artwork(artist, album, title)
         fanart = artwork["art"].get("fanart", "special://home/addons/plugin.audio.roon/fanart.jpg")
-        self.dialog.getControl(3300).setImage(fanart)
         efa = artwork["art"].get("extrafanart", "")
+        if not efa:
+            efa = fanart
         self.dialog.getControl(3301).setLabel(efa)
-        clearlogo = artwork["art"].get("clearlogo", "")
+        
+        clearlogo = artwork["art"].get("clearlogo", "roonlogo.png")
         self.dialog.getControl(3303).setImage(clearlogo)
         banner = artwork["art"].get("banner", "")
         self.dialog.getControl(3304).setImage(banner)

@@ -105,14 +105,16 @@ class RoonServer:
         """ Send next track command to zone. """
         return self.send_request("control", {"control":"play", "zone": self.zone_id} )
 
+    def stop_playback(self):
+        """ Send next track command to zone. """
+        return self.send_request("control", {"control":"stop", "zone": self.zone_id} )
+
     def shuffle(self, shuffle):
         """ Set shuffle state on zone """
         return self.change_settings("shuffle", shuffle)
 
     def toggle_repeat(self):
-        """ 
-            Toggle repeat on zone 
-        """
+        """ Toggle repeat on zone """
         return self.change_settings("loop", "next")
 
     def repeat(self, repeat):
@@ -131,6 +133,25 @@ class RoonServer:
     def zone_details(self):
         ''' return zone details'''
         return self.send_request("zone", {"zone": self.zone_id})
+
+    def set_volume_level(self, volume, method="absolute"):
+        """ Send new volume_level to all outputs of zone """
+        for output in self.zone_details()["outputs"]:
+            output_id = output["output_id"]
+            cur_vol = output["volume"]["value"]
+            if method == "up":
+                volume = cur_vol + volume
+            elif method == "down":
+                volume = cur_vol - volume
+            self.send_request("change_volume", {"volume":volume, "output": output_id} )
+
+    def volume_up(self):
+        """ Send new volume_level to device. """
+        return self.set_volume_level(5, "up")
+
+    def volume_down(self):
+        """ Send new volume_level to device. """
+        return self.set_volume_level(5, "down")
 
 
     def send_request(self, endpoint, params=None):
