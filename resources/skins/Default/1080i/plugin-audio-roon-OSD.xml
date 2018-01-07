@@ -162,6 +162,7 @@
                     <description>zone name</description>
                     <width>300</width>
                     <height>90</height>
+                    <aligny>center</aligny>
                     <textcolor>aa000000</textcolor>
                 </control>
 
@@ -173,7 +174,7 @@
             <description>OSD infopanel with track info</description>
             <bottom>85</bottom>
             <height>220</height>
-            
+            <width>100%</width>
             <control type="image">
                 <description>Background panel</description>
                 <texture border="5">panel.png</texture>
@@ -187,7 +188,7 @@
                 <left>640</left>
                 <width>1000</width>
                 <height>50</height>
-                <font>font30</font>
+                <font>font14</font>
                 <align>left</align>
                 <textcolor>FF00b8ff</textcolor>
             </control>
@@ -197,7 +198,7 @@
                 <left>640</left>
                 <width>1000</width>
                 <height>50</height>
-                <font>font16</font>
+                <font>font14</font>
                 <align>left</align>
                 <textcolor>black</textcolor>
             </control>
@@ -243,12 +244,13 @@
 
             <control type="label" id="3121">
                 <description>duration</description>
-                <bottom>23</bottom>
+                <bottom>27</bottom>
                 <right>20</right>
                 <width>400</width>
-                <height>30</height>
+                <height>20</height>
                 <font>font14</font>
                 <align>right</align>
+                <aligny>center</aligny>
                 <textcolor>black</textcolor>
             </control>
 
@@ -256,8 +258,8 @@
                 <description>clearlogo image (if existing)</description>
                 <texture fallback="roonlogo.png">roonlogo.png</texture>
                 <right>20</right>
-                <width>240</width>
-                <height>100</height>
+                <width>340</width>
+                <height>120</height>
                 <top>20</top>
                 <aspectratio align="right" aligny="top">keep</aspectratio>
             </control>
@@ -268,14 +270,13 @@
             <description>Cover image with background</description>
             <bottom>10</bottom>
             <left>20</left>
-            <width>420</width>
+            <width>400</width>
             <height>400</height>
             <control type="image" id="3307">
                 <description>discart image behind cover</description>
-                <bottom>2%</bottom>
-                <left>45%</left>
-                <width>96%</width>
-                <height>96%</height>
+                <bordersize>20</bordersize>
+                <width>400</width>
+                <left>200</left>
                 <texture>Disc.png</texture>
                 <aspectratio align="right" aligny="center">keep</aspectratio>
                 <animation effect="rotate" end="-360" center="auto" time="4800" loop="true" reversible="false" condition="Control.IsEnabled(3202)">Conditional</animation>
