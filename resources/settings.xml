@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Proxy setting">
+        <setting label="Enter details for api proxy service" type="lsep"/>
+        <setting id="proxy_host" type="text" label="Hostname or IP" default="localhost"/>
+        <setting id="proxy_port" type="number" label="Port" default="3006" />
+    </category>
+</settings>
